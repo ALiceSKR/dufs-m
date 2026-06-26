@@ -22306,6 +22306,7 @@ const Sb = ["color", "file", "time", "date", "datetime-local", "week", "month"],
                         activator: rn((({
                             props: t
                         }) => [Ma(nm, Na(Na(e, t), {
+                            class: "topbar-action-btn topbar-action-btn--pink",
                             variant: "text",
                             icon: "$mdiUpload",
                             onClick: O
@@ -22393,6 +22394,7 @@ const Sb = ["color", "file", "time", "date", "datetime-local", "week", "month"],
                     activator: rn((({
                         props: e
                     }) => [Ma(nm, Na(e, {
+                        class: "topbar-action-btn topbar-action-btn--pink",
                         variant: "text",
                         icon: "$mdiFolderPlus",
                         onClick: H
@@ -22411,13 +22413,17 @@ const Sb = ["color", "file", "time", "date", "datetime-local", "week", "month"],
                         download: ""
                     }), null, 16, ["href"])])),
                     _: 1
-                }, 8, ["text"])) : Oa("", !0), v.value.auth ? (Ca(), Ta(Tb, {
+                }, 8, ["text"])) : Oa("", !0), v.value.auth && v.value.user ? (Ca(), La("span", {
+                    key: 2,
+                    class: "topbar-user-name"
+                }, K(v.value.user), 1)) : Oa("", !0), v.value.auth ? (Ca(), Ta(Tb, {
                     key: 2,
                     text: v.value.user ? St(r)("titleLogout", [v.value.user]) : St(r)("titleLogin")
                 }, {
                     activator: rn((({
                         props: e
                     }) => [Ma(nm, Na(e, {
+                        class: "topbar-action-btn topbar-action-btn--pink",
                         variant: "text",
                         icon: v.value.user ? "$mdiLogout" : "$mdiLogin",
                         onClick: o[1] || (o[1] = e => v.value.user ? (async () => {
