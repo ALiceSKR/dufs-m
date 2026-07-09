@@ -27968,5 +27968,9 @@ pre[class*=language-] {
 }
 
 .dufs-title-theme-toggle {
-    cursor: pointer
+    align-items: center;
+    cursor: pointer;
+    display: inline-flex;
+    min-height: 48px;
+    min-width: 96px
 }
