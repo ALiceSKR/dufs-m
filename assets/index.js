@@ -22255,6 +22255,12 @@ const Sb = ["color", "file", "time", "date", "datetime-local", "week", "month"],
                 e && (await a(y.value + e, {
                     method: "MKCOL"
                 }), n.success(r("toastCreateFolder")), await w())
+            }, createFilePromptAction = async () => {
+                const e = await t.promises.prompt(r("dialogCreateFileLabel"), r("titleCreateFile"));
+                e && (await a(y.value + e, {
+                    method: "PUT",
+                    body: ""
+                }), n.success(r("toastCreateFile")), await w())
             }, B = kt(!0), D = kt(!1), z = kt(!1), j = kt(0), U = kt(0), W = kt(null), Z = kt(""), q = kt(""), Y = kt(""), X = kt(null), J = e => (e = e || 0, `${Math.floor(e / 60).toString().padStart(2, 0)}:${(Math.round(e) % 60).toString().padStart(2, 0)}`);
             aa(C, (() => {
                 X.value.pause()
@@ -22393,20 +22399,34 @@ const Sb = ["color", "file", "time", "date", "datetime-local", "week", "month"],
                 }, {
                     activator: rn((({
                         props: e
+                        }) => [Ma(nm, Na(e, {
+                            class: "topbar-action-btn topbar-action-btn--pink",
+                            variant: "text",
+                            icon: "$mdiFolderPlus",
+                            onClick: H
+                        }), null, 16)])),
+                    _: 1
+                }, 8, ["text"])) : Oa("", !0), v.value.allow_upload ? (Ca(), Ta(Tb, {
+                    key: 1,
+                    text: St(r)("titleCreateFile")
+                }, {
+                    activator: rn((({
+                        props: e
                     }) => [Ma(nm, Na(e, {
                         class: "topbar-action-btn topbar-action-btn--pink",
                         variant: "text",
-                        icon: "$mdiFolderPlus",
-                        onClick: H
+                        icon: "$mdiFilePlus",
+                        onClick: createFilePromptAction
                     }), null, 16)])),
                     _: 1
                 }, 8, ["text"])) : Oa("", !0), v.value.allow_archive ? (Ca(), Ta(Tb, {
-                    key: 1,
+                    key: 2,
                     text: St(r)("titleDownloadArchive")
                 }, {
                     activator: rn((({
                         props: e
                     }) => [Ma(nm, Na(e, {
+                        class: "topbar-action-btn topbar-action-btn--pink",
                         variant: "text",
                         icon: "$mdiFolderDownload",
                         href: y.value + "?zip",
@@ -22414,10 +22434,10 @@ const Sb = ["color", "file", "time", "date", "datetime-local", "week", "month"],
                     }), null, 16, ["href"])])),
                     _: 1
                 }, 8, ["text"])) : Oa("", !0), v.value.auth && v.value.user ? (Ca(), La("span", {
-                    key: 2,
+                    key: 3,
                     class: "topbar-user-name"
                 }, K(v.value.user), 1)) : Oa("", !0), v.value.auth ? (Ca(), Ta(Tb, {
-                    key: 2,
+                    key: 4,
                     text: v.value.user ? St(r)("titleLogout", [v.value.user]) : St(r)("titleLogin")
                 }, {
                     activator: rn((({
@@ -23616,6 +23636,7 @@ const Sb = ["color", "file", "time", "date", "datetime-local", "week", "month"],
                 mdiChevronRight: "M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z",
                 mdiHome: "M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z",
                 mdiFile: "M13,9V3.5L18.5,9M6,2C4.89,2 4,2.89 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6Z",
+                mdiFilePlus: "M14,2L20,8V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2H14M13,9H18.5L13,3.5V9M12,11V14H9V16H12V19H14V16H17V14H14V11H12Z",
                 mdiFileMusic: "M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M13,13H11V18A2,2 0 0,1 9,20A2,2 0 0,1 7,18A2,2 0 0,1 9,16C9.4,16 9.7,16.1 10,16.3V11H13V13M13,9V3.5L18.5,9H13Z",
                 mdiFileVideo: "M13,9H18.5L13,3.5V9M6,2H14L20,8V20A2,2 0 0,1 18,22H6C4.89,22 4,21.1 4,20V4C4,2.89 4.89,2 6,2M17,19V13L14,15.2V13H7V19H14V16.8L17,19Z",
                 mdiFilePdfBox: "M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3M9.5 11.5C9.5 12.3 8.8 13 8 13H7V15H5.5V9H8C8.8 9 9.5 9.7 9.5 10.5V11.5M14.5 13.5C14.5 14.3 13.8 15 13 15H10.5V9H13C13.8 9 14.5 9.7 14.5 10.5V13.5M18.5 10.5H17V11.5H18.5V13H17V15H15.5V9H18.5V10.5M12 10.5H13V13.5H12V10.5M7 10.5H8V11.5H7V10.5Z",
@@ -23742,6 +23763,7 @@ const Sb = ["color", "file", "time", "date", "datetime-local", "week", "month"],
             actionLogout: "Logout",
             titleUploadFile: "Upload files",
             titleCreateFolder: "Create folder",
+            titleCreateFile: "Create file",
             titleDownloadArchive: "Download root folder as a .zip file",
             titleLogin: "Login",
             titleLogout: "Logout ({0})",
@@ -23751,11 +23773,13 @@ const Sb = ["color", "file", "time", "date", "datetime-local", "week", "month"],
             toastMoveFile: "File moved.",
             toastUploadDisabled: "File uploading is disabled.",
             toastCreateFolder: "New folder created.",
+            toastCreateFile: "New file created.",
             toastFailedLoadAudioMetadata: "Failed to read audio metadata: {0}",
             dialogDeleteConfirm: "Are you sure to delete {0}?",
             dialogMoveLabel: "Path",
             dialogUploadBody: "Are you sure to upload this file? | Are you sure to upload these {0} files?",
             dialogCreateFolderLabel: "Folder name",
+            dialogCreateFileLabel: "File name",
             dialogUploadPending: "Pending",
             dialogUploadSucceed: "Uploaded",
             dialogUploadError: "Failed to upload",
@@ -23783,6 +23807,7 @@ const Sb = ["color", "file", "time", "date", "datetime-local", "week", "month"],
             actionLogout: "注销",
             titleUploadFile: "上传文件",
             titleCreateFolder: "新建文件夹",
+            titleCreateFile: "新建文件",
             titleDownloadArchive: "下载当前目录为 ZIP 压缩包",
             titleLogin: "登录",
             titleLogout: "注销（{0}）",
@@ -23792,11 +23817,13 @@ const Sb = ["color", "file", "time", "date", "datetime-local", "week", "month"],
             toastMoveFile: "已移动文件",
             toastUploadDisabled: "文件上传已禁用",
             toastCreateFolder: "已新建文件夹",
+            toastCreateFile: "已新建文件",
             toastFailedLoadAudioMetadata: "加载音频元数据失败：{0}",
             dialogDeleteConfirm: "确定要删除 {0} 吗？",
             dialogMoveLabel: "路径",
             dialogUploadBody: "确定要上传这个文件吗？ | 确定要上传以下 {0} 个文件吗？",
             dialogCreateFolderLabel: "文件夹名称",
+            dialogCreateFileLabel: "文件名",
             dialogUploadPending: "等待上传",
             dialogUploadSucceed: "上传成功",
             dialogUploadError: "上传失败",
