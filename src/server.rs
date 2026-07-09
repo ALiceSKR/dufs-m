@@ -197,9 +197,15 @@ impl Server {
             is_microsoft_webdav,
         );
 
+        let is_login_check = method.as_str() == "CHECKAUTH" && query_params.contains_key("login");
         let (user, access_paths) = match guard {
             (None, None) => {
-                self.auth_reject(&mut res)?;
+                if is_login_check {
+                    *res.status_mut() = StatusCode::UNAUTHORIZED;
+                    *res.body_mut() = body_full("Unauthorized");
+                } else {
+                    self.auth_reject(&mut res)?;
+                }
                 return Ok(res);
             }
             (Some(_), None) => {
@@ -219,7 +225,10 @@ impl Server {
                     *res.body_mut() = body_full(user);
                 }
                 None => {
-                    if has_query_flag(&query_params, "login") || !access_paths.perm().readwrite() {
+                    if is_login_check {
+                        *res.status_mut() = StatusCode::UNAUTHORIZED;
+                        *res.body_mut() = body_full("Unauthorized");
+                    } else if !access_paths.perm().readwrite() {
                         self.auth_reject(&mut res)?
                     } else {
                         *res.body_mut() = body_full("");

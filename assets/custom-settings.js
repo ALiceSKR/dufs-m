@@ -157,6 +157,17 @@
         document.cookie = "dufs_auth=; Path=/; Max-Age=0; SameSite=Lax";
     }
 
+    function storePasswordCredential(username, password) {
+        if (!window.PasswordCredential || !navigator.credentials) {
+            return;
+        }
+        navigator.credentials.store(new PasswordCredential({
+            id: username,
+            name: username,
+            password,
+        })).catch((error) => console.warn(error));
+    }
+
     function createLoginDialog() {
         const dialog = document.createElement("div");
         dialog.className = "dufs-login-overlay";
@@ -202,8 +213,9 @@
             form.addEventListener("submit", async (event) => {
                 event.preventDefault();
                 const authHeader = encodeBasicAuth(username.value, password.value);
+                const loginUrl = url.includes("?") ? `${url}&login` : `${url}?login`;
                 try {
-                    const response = await fetch(url, {
+                    const response = await fetch(loginUrl, {
                         method: "CHECKAUTH",
                         credentials: "same-origin",
                         headers: { authorization: authHeader },
@@ -214,6 +226,7 @@
                         return;
                     }
                     setAuthCookie(authHeader);
+                    storePasswordCredential(username.value, password.value);
                     close(true);
                 } catch (err) {
                     console.error(err);
