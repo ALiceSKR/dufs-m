@@ -27974,3 +27974,98 @@ pre[class*=language-] {
     min-height: 48px;
     min-width: 96px
 }
+
+.dufs-login-overlay {
+    align-items: center;
+    background: rgba(8, 12, 20, .42);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    left: 0;
+    padding: 20px;
+    position: fixed;
+    right: 0;
+    top: 0;
+    z-index: 10000
+}
+
+.dufs-login-panel {
+    background: rgba(255, 255, 255, .72);
+    border: 1px solid rgba(255, 255, 255, .42);
+    border-radius: 18px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, .28);
+    color: rgba(18, 24, 34, .9);
+    max-width: 380px;
+    padding: 22px;
+    width: min(380px, 100%)
+}
+
+.dufs-login-title {
+    color: var(--dufs-accent-color);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 18px
+}
+
+.dufs-login-field {
+    display: block;
+    margin: 16px 0
+}
+
+.dufs-login-field span {
+    display: block;
+    font-size: .95rem;
+    margin-bottom: 8px
+}
+
+.dufs-login-field input {
+    background: rgba(255, 255, 255, .36);
+    border: 1px solid rgba(0, 0, 0, .14);
+    border-radius: 10px;
+    color: rgba(18, 24, 34, .9);
+    font: inherit;
+    height: 40px;
+    padding: 0 12px;
+    width: 100%
+}
+
+.dufs-login-field input:focus {
+    border-color: var(--dufs-accent-color);
+    outline: none
+}
+
+.dufs-login-error {
+    color: #b3261e;
+    font-size: .9rem;
+    margin-top: 10px
+}
+
+.dufs-login-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px
+}
+
+.dufs-login-actions button {
+    background: rgba(255, 255, 255, .5);
+    border: 1px solid rgba(0, 0, 0, .08);
+    border-radius: 999px;
+    color: rgba(18, 24, 34, .82);
+    cursor: pointer;
+    padding: 8px 16px
+}
+
+.dufs-login-actions button:hover,
+.dufs-login-actions button:focus-visible {
+    border-color: var(--dufs-accent-color);
+    color: var(--dufs-accent-color)
+}
+
+.dufs-login-actions button[type=submit] {
+    background: var(--dufs-accent-color);
+    border-color: var(--dufs-accent-color);
+    color: #fff
+}

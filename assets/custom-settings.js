@@ -140,6 +140,94 @@
         applySettings(next);
     }
 
+    function encodeBasicAuth(username, password) {
+        const value = new TextEncoder().encode(`${username}:${password}`);
+        let binary = "";
+        value.forEach((byte) => {
+            binary += String.fromCharCode(byte);
+        });
+        return `Basic ${btoa(binary)}`;
+    }
+
+    function setAuthCookie(authHeader) {
+        document.cookie = `dufs_auth=${encodeURIComponent(authHeader)}; Path=/; SameSite=Lax`;
+    }
+
+    function clearAuthCookie() {
+        document.cookie = "dufs_auth=; Path=/; Max-Age=0; SameSite=Lax";
+    }
+
+    function createLoginDialog() {
+        const dialog = document.createElement("div");
+        dialog.className = "dufs-login-overlay";
+        dialog.innerHTML = `
+            <form class="dufs-login-panel" aria-label="Login">
+                <div class="dufs-login-title">登录</div>
+                <label class="dufs-login-field">
+                    <span>用户名</span>
+                    <input name="username" autocomplete="username" required>
+                </label>
+                <label class="dufs-login-field">
+                    <span>密码</span>
+                    <input name="password" type="password" autocomplete="current-password" required>
+                </label>
+                <div class="dufs-login-error" hidden></div>
+                <div class="dufs-login-actions">
+                    <button type="button" data-action="cancel">取消</button>
+                    <button type="submit">登录</button>
+                </div>
+            </form>
+        `;
+        document.body.appendChild(dialog);
+        return dialog;
+    }
+
+    function openLoginDialog(url) {
+        return new Promise((resolve) => {
+            const dialog = createLoginDialog();
+            const form = dialog.querySelector("form");
+            const username = dialog.querySelector('[name="username"]');
+            const password = dialog.querySelector('[name="password"]');
+            const error = dialog.querySelector(".dufs-login-error");
+            const close = (result) => {
+                dialog.remove();
+                resolve(result);
+            };
+
+            dialog.addEventListener("click", (event) => {
+                if (event.target === dialog || event.target.dataset.action === "cancel") {
+                    close(false);
+                }
+            });
+            form.addEventListener("submit", async (event) => {
+                event.preventDefault();
+                const authHeader = encodeBasicAuth(username.value, password.value);
+                try {
+                    const response = await fetch(url, {
+                        method: "CHECKAUTH",
+                        credentials: "same-origin",
+                        headers: { authorization: authHeader },
+                    });
+                    if (!response.ok) {
+                        error.textContent = "用户名或密码错误";
+                        error.hidden = false;
+                        return;
+                    }
+                    setAuthCookie(authHeader);
+                    close(true);
+                } catch (err) {
+                    console.error(err);
+                    error.textContent = "登录请求失败";
+                    error.hidden = false;
+                }
+            });
+            username.focus();
+        });
+    }
+
+    window.__DUFS_CUSTOM_LOGIN__ = openLoginDialog;
+    window.__DUFS_CUSTOM_LOGOUT__ = clearAuthCookie;
+
     function isSignedIn() {
         return Boolean(
             (window.__INITIAL_DATA__ && window.__INITIAL_DATA__.auth && window.__INITIAL_DATA__.user) ||

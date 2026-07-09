@@ -22447,11 +22447,15 @@ const Sb = ["color", "file", "time", "date", "datetime-local", "week", "month"],
                         variant: "text",
                         icon: v.value.user ? "$mdiLogout" : "$mdiLogin",
                         onClick: o[1] || (o[1] = e => v.value.user ? (async () => {
-                            await t.promises.confirm(r("dialogLogout", [v.value.user]), r("actionLogout")) && (await new Promise(((e, t) => {
+                            await t.promises.confirm(r("dialogLogout", [v.value.user]), r("actionLogout")) && (window.__DUFS_CUSTOM_LOGOUT__ && window.__DUFS_CUSTOM_LOGOUT__(), await new Promise(((e, t) => {
                                 const n = new XMLHttpRequest;
                                 n.onload = e, n.onerror = t, n.open("LOGOUT", `${y.value}`, !0, v.value.user), n.send()
                             })), await w())
                         })() : (async () => {
+                            if (window.__DUFS_CUSTOM_LOGIN__) {
+                                await window.__DUFS_CUSTOM_LOGIN__(`${y.value}`) && await w();
+                                return
+                            }
                             await a(`${y.value}`, {
                                 method: "CHECKAUTH"
                             }), await w()

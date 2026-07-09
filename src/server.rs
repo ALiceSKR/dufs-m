@@ -23,7 +23,7 @@ use hyper::{
     body::Incoming,
     header::{
         HeaderValue, AUTHORIZATION, CONNECTION, CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_RANGE,
-        CONTENT_TYPE, RANGE,
+        CONTENT_TYPE, COOKIE, RANGE,
     },
     Method, StatusCode, Uri,
 };
@@ -176,7 +176,13 @@ impl Server {
                 .insert(CONNECTION, HeaderValue::from_static("close"));
         }
 
-        let authorization = headers.get(AUTHORIZATION);
+        let authorization_header = headers.get(AUTHORIZATION);
+        let cookie_authorization = if authorization_header.is_none() {
+            Self::get_cookie_auth(headers)
+        } else {
+            None
+        };
+        let authorization = authorization_header.or(cookie_authorization.as_ref());
 
         let query = req.uri().query().unwrap_or_default();
         let mut query_params: HashMap<String, String> = form_urlencoded::parse(query.as_bytes())
@@ -1416,6 +1422,20 @@ impl Server {
         www_authenticate(res, &self.args)?;
         *res.status_mut() = StatusCode::UNAUTHORIZED;
         Ok(())
+    }
+
+    fn get_cookie_auth(headers: &HeaderMap<HeaderValue>) -> Option<HeaderValue> {
+        let cookie = headers.get(COOKIE)?.to_str().ok()?;
+        for part in cookie.split(';') {
+            let Some((name, value)) = part.trim().split_once('=') else {
+                continue;
+            };
+            if name == "dufs_auth" {
+                let decoded = urlencoding::decode(value).ok()?.into_owned();
+                return HeaderValue::from_str(&decoded).ok();
+            }
+        }
+        None
     }
 
     async fn guard_root_contained(&self, path: &Path) -> bool {
