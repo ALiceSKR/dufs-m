@@ -26310,23 +26310,31 @@ html.overflow-y-hidden {
 }
 
 #app-bar-append .topbar-action-btn--pink,
-#app-bar-append .topbar-action-btn--pink .v-icon {
-    color: #f7a8c4
+#app-bar-append .topbar-action-btn--pink .v-icon,
+#app-bar-append .topbar-action-btn--pink svg,
+.v-app-bar .v-btn,
+.v-app-bar .v-btn .v-icon,
+.v-app-bar .v-icon,
+.v-app-bar svg {
+    color: var(--dufs-accent-color) !important;
+    fill: currentColor !important
 }
 
 #app-bar-append .topbar-action-btn--pink:hover,
-#app-bar-append .topbar-action-btn--pink:focus-visible {
-    color: #ef8fb3
+#app-bar-append .topbar-action-btn--pink:focus-visible,
+.v-app-bar .v-btn:hover,
+.v-app-bar .v-btn:focus-visible {
+    color: var(--dufs-accent-hover-color) !important
 }
 
 .v-app-bar .v-toolbar-title,
 .v-app-bar .v-toolbar-title__placeholder {
-    color: #f7a8c4
+    color: var(--dufs-accent-color) !important
 }
 
 #app-bar-append .topbar-user-name {
     align-items: center;
-    color: #f7a8c4;
+    color: var(--dufs-accent-color);
     display: inline-flex;
     font-size: .95rem;
     line-height: 1;
@@ -27262,18 +27270,29 @@ html.overflow-y-hidden {
     --v-layout-bottom: 0px
 }
 
+:root {
+    --dufs-panel-opacity: .5;
+    --dufs-table-head-opacity: .14;
+    --dufs-table-row-opacity: .06;
+    --dufs-table-row-hover-opacity: .11;
+    --dufs-panel-blur: 1px;
+    --dufs-accent-color: #f7a8c4;
+    --dufs-accent-hover-color: #ef8fb3;
+    --dufs-file-name-color: #121822;
+}
+
 /* Preview override: keep the file area translucent over the wallpaper */
 .v-card.my-4 {
-    background: rgba(255, 255, 255, .5) !important;
-    backdrop-filter: blur(1px);
-    -webkit-backdrop-filter: blur(1px);
+    background: rgba(255, 255, 255, var(--dufs-panel-opacity)) !important;
+    backdrop-filter: blur(var(--dufs-panel-blur));
+    -webkit-backdrop-filter: blur(var(--dufs-panel-blur));
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);
 }
 
 .v-app-bar.v-toolbar {
-    background: rgba(255, 255, 255, .5) !important;
-    backdrop-filter: blur(1px);
-    -webkit-backdrop-filter: blur(1px);
+    background: rgba(255, 255, 255, var(--dufs-panel-opacity)) !important;
+    backdrop-filter: blur(var(--dufs-panel-blur));
+    -webkit-backdrop-filter: blur(var(--dufs-panel-blur));
     box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .12) !important;
     color: rgba(var(--v-theme-on-surface), var(--v-high-emphasis-opacity));
 }
@@ -27285,8 +27304,20 @@ html.overflow-y-hidden {
 }
 
 .v-card.my-4 .v-table {
-    color: rgba(18, 24, 34, .92);
+    color: var(--dufs-file-name-color) !important;
     text-shadow: 0 1px 2px rgba(255, 255, 255, .5);
+}
+
+.v-card.my-4 .v-table > .v-table__wrapper > table > thead > tr > th,
+.v-card.my-4 .v-table > .v-table__wrapper > table > thead > tr > td,
+.v-card.my-4 .v-table > .v-table__wrapper > table > tbody > tr > td,
+.v-card.my-4 .v-table > .v-table__wrapper > table > tbody > tr > th,
+.v-card.my-4 .v-table a,
+.v-card.my-4 .v-table .v-btn,
+.v-card.my-4 .v-table .v-icon,
+.v-card.my-4 .v-table svg {
+    color: var(--dufs-file-name-color) !important;
+    fill: currentColor !important;
 }
 
 .v-table,
@@ -27322,18 +27353,18 @@ html.overflow-y-hidden {
 }
 
 .v-card.my-4 .v-table > .v-table__wrapper > table > thead > tr > th {
-    background: rgba(255, 255, 255, .12) !important;
+    background: rgba(255, 255, 255, var(--dufs-table-head-opacity)) !important;
 }
 
 .v-card.my-4 .v-table > .v-table__wrapper > table > tbody > tr > td,
 .v-card.my-4 .v-table > .v-table__wrapper > table > tbody > tr > th {
-    background: rgba(255, 255, 255, .04) !important;
+    background: rgba(255, 255, 255, var(--dufs-table-row-opacity)) !important;
 }
 
 .v-table.v-theme--light.v-table--density-default.w-100 > .v-table__wrapper > table > tbody > tr:hover > td,
 .v-table.v-theme--light.v-table--density-default.w-100 > .v-table__wrapper > table > tbody > tr:hover > th {
-    background-color: rgba(255, 255, 255, .1) !important;
-    background: rgba(255, 255, 255, .1) !important;
+    background-color: rgba(255, 255, 255, var(--dufs-table-row-hover-opacity)) !important;
+    background: rgba(255, 255, 255, var(--dufs-table-row-hover-opacity)) !important;
 }
 
 .v-card.v-card--variant-elevated .v-card-item,
@@ -27725,4 +27756,217 @@ pre[class*=language-] {
 
 .v-breadcrumbs-item--disabled {
     opacity: unset
+}
+
+.dufs-settings-button {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 48px;
+    justify-content: center;
+    line-height: 1;
+    margin: 0 2px;
+    padding: 0;
+    vertical-align: middle;
+    width: 48px
+}
+
+.dufs-settings-button svg {
+    display: block;
+    height: 24px;
+    width: 24px
+}
+
+.dufs-settings-overlay[hidden] {
+    display: none !important
+}
+
+.dufs-settings-overlay {
+    align-items: center;
+    background: rgba(8, 12, 20, .42);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    left: 0;
+    padding: 20px;
+    position: fixed;
+    right: 0;
+    top: 0;
+    z-index: 10000
+}
+
+.dufs-settings-panel {
+    background: rgba(255, 255, 255, .72);
+    border: 1px solid rgba(255, 255, 255, .42);
+    border-radius: 18px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, .28);
+    color: rgba(18, 24, 34, .9);
+    max-width: 420px;
+    padding: 22px;
+    width: min(420px, 100%)
+}
+
+.dufs-settings-title {
+    color: var(--dufs-accent-color);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 18px
+}
+
+.dufs-settings-field {
+    display: block;
+    margin: 16px 0
+}
+
+.dufs-settings-field span {
+    align-items: center;
+    display: flex;
+    font-size: .95rem;
+    gap: 8px;
+    justify-content: space-between;
+    margin-bottom: 8px
+}
+
+.dufs-settings-field output {
+    color: rgba(18, 24, 34, .58);
+    font-size: .86rem
+}
+
+.dufs-settings-field span button {
+    background: rgba(255, 255, 255, .45);
+    border: 1px solid rgba(0, 0, 0, .08);
+    border-radius: 999px;
+    color: rgba(18, 24, 34, .68);
+    cursor: pointer;
+    font-size: .78rem;
+    margin-left: auto;
+    padding: 3px 9px
+}
+
+.dufs-settings-field span button:hover,
+.dufs-settings-field span button:focus-visible {
+    border-color: var(--dufs-accent-color);
+    color: var(--dufs-accent-color)
+}
+
+.dufs-settings-field input[type=range] {
+    accent-color: var(--dufs-accent-color);
+    width: 100%
+}
+
+.dufs-settings-field input[type=color] {
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    height: 42px;
+    padding: 0;
+    width: 100%
+}
+
+.dufs-settings-field input[type=text] {
+    background: rgba(255, 255, 255, .36);
+    border: 1px solid rgba(0, 0, 0, .14);
+    border-radius: 10px;
+    color: rgba(18, 24, 34, .9);
+    font: inherit;
+    height: 40px;
+    padding: 0 12px;
+    width: 100%
+}
+
+.dufs-settings-field input[type=text]:focus {
+    border-color: var(--dufs-accent-color);
+    outline: none
+}
+
+.dufs-settings-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    margin-top: 20px
+}
+
+.dufs-settings-theme-actions,
+.dufs-settings-save-actions {
+    display: flex;
+    gap: 10px
+}
+
+.dufs-settings-actions button {
+    background: rgba(255, 255, 255, .5);
+    border: 1px solid rgba(0, 0, 0, .08);
+    border-radius: 999px;
+    color: rgba(18, 24, 34, .82);
+    cursor: pointer;
+    padding: 8px 16px
+}
+
+.dufs-settings-actions button:hover,
+.dufs-settings-actions button:focus-visible {
+    border-color: var(--dufs-accent-color);
+    color: var(--dufs-accent-color)
+}
+
+.dufs-settings-theme-actions button.is-active {
+    background: var(--dufs-accent-color);
+    border-color: var(--dufs-accent-color);
+    color: #fff
+}
+
+.dufs-settings-actions button[data-action=save] {
+    background: var(--dufs-accent-color);
+    border-color: var(--dufs-accent-color);
+    color: #fff
+}
+
+.v-dialog > .v-overlay__content > .v-card,
+.v-dialog > .v-overlay__content > form > .v-card {
+    background: rgba(255, 255, 255, .72) !important;
+    border: 1px solid rgba(255, 255, 255, .42) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, .28) !important;
+    color: rgba(18, 24, 34, .9) !important;
+    overflow: hidden;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px)
+}
+
+.v-dialog > .v-overlay__content > .v-card > .v-card-item,
+.v-dialog > .v-overlay__content > .v-card > .v-card-text,
+.v-dialog > .v-overlay__content > .v-card > .v-card-actions,
+.v-dialog > .v-overlay__content > form > .v-card > .v-card-item,
+.v-dialog > .v-overlay__content > form > .v-card > .v-card-text,
+.v-dialog > .v-overlay__content > form > .v-card > .v-card-actions {
+    background: transparent !important
+}
+
+.v-dialog .v-card-title {
+    color: var(--dufs-accent-color) !important;
+    font-weight: 700
+}
+
+.v-dialog .v-field {
+    background: rgba(255, 255, 255, .22) !important
+}
+
+.v-dialog .v-field__outline,
+.v-dialog .v-field__outline__start,
+.v-dialog .v-field__outline__notch:before,
+.v-dialog .v-field__outline__notch:after,
+.v-dialog .v-field__outline__end {
+    border-color: rgba(18, 24, 34, .42) !important
+}
+
+.v-dialog .v-btn {
+    color: var(--dufs-accent-color) !important
+}
+
+.dufs-title-theme-toggle {
+    cursor: pointer
 }
