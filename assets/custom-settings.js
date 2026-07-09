@@ -74,7 +74,7 @@
         return {
             activeTheme,
             themes,
-            pageTitle: typeof settings.pageTitle === "string" && settings.pageTitle.trim()
+            pageTitle: typeof settings.pageTitle === "string"
                 ? settings.pageTitle.trim().slice(0, 80)
                 : defaults.pageTitle,
         };
@@ -120,7 +120,7 @@
         document.querySelectorAll(".v-toolbar-title__placeholder").forEach((element) => {
             element.textContent = title;
         });
-        if (document.title) {
+        if (document.title && title) {
             document.title = document.title.replace(/ - .+$/, ` - ${title}`);
         }
     }
