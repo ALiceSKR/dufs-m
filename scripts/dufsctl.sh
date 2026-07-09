@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 SERVICE_NAME="${SERVICE_NAME:-dufs-share}"
 SERVICE_FILE="${SERVICE_FILE:-${ROOT_DIR}/dufs-share.service}"
+CONFIG_FILE="${CONFIG_FILE:-${ROOT_DIR}/dufs-share.yaml}"
 
 usage() {
     cat <<EOF
@@ -19,6 +20,7 @@ Commands:
 Environment:
   SERVICE_NAME   systemd service name, default: dufs-share
   SERVICE_FILE   service file to install, default: ./dufs-share.service
+  CONFIG_FILE    dufs yaml config file, default: ./dufs-share.yaml
 EOF
 }
 
@@ -32,9 +34,50 @@ deploy() {
         exit 1
     fi
 
+    ensure_ui_settings
     sudo install -m 0644 "${SERVICE_FILE}" "/etc/systemd/system/${SERVICE_NAME}.service"
     sudo systemctl daemon-reload
     sudo systemctl enable "${SERVICE_NAME}.service"
+}
+
+ensure_ui_settings() {
+    local settings_path
+
+    if [[ -f "${CONFIG_FILE}" ]]; then
+        settings_path="$(sed -n 's/^[[:space:]]*ui-settings-path:[[:space:]]*//p' "${CONFIG_FILE}" | tail -n 1 | sed "s/^['\"]//;s/['\"]$//")"
+    else
+        settings_path=""
+    fi
+
+    if [[ -z "${settings_path}" ]]; then
+        settings_path="${ROOT_DIR}/ui-settings.json"
+    fi
+
+    if [[ -f "${settings_path}" ]]; then
+        return
+    fi
+
+    mkdir -p "$(dirname -- "${settings_path}")"
+    cat >"${settings_path}" <<'EOF'
+{
+  "activeTheme": "theme1",
+  "pageTitle": "Dustin's file share",
+  "themes": {
+    "theme1": {
+      "panelOpacity": 0.5,
+      "panelBlur": 1,
+      "accentColor": "#f7a8c4",
+      "fileNameColor": "#121822"
+    },
+    "theme2": {
+      "panelOpacity": 0.5,
+      "panelBlur": 1,
+      "accentColor": "#f7a8c4",
+      "fileNameColor": "#121822"
+    }
+  }
+}
+EOF
 }
 
 restart() {
