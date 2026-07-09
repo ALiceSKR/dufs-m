@@ -1,0 +1,13 @@
+serve-path: /home/muskr/shar
+bind: 0.0.0.0
+port: 80
+assets: /home/muskr/code/dufs/assets
+ui-settings-path: /home/muskr/code/dufs/ui-settings.json
+ui-settings-route: __dufs__/ui-settings
+auth:
+  - 'muskr:muskr@1@/:rw'
+  - '@/'
+allow-upload: true
+allow-delete: true
+allow-search: true
+allow-archive: true
