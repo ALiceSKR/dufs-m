@@ -295,6 +295,10 @@ pub struct Args {
     pub render_try_index: bool,
     pub enable_cors: bool,
     pub assets: Option<PathBuf>,
+    pub ui_settings_path: Option<PathBuf>,
+    #[serde(default = "default_ui_settings_route")]
+    #[default(default_ui_settings_route())]
+    pub ui_settings_route: String,
     pub error_page: Option<PathBuf>,
     #[serde(deserialize_with = "deserialize_log_http")]
     #[serde(rename = "log-format")]
@@ -416,6 +420,11 @@ impl Args {
             if p.exists() {
                 args.error_page = Some(p);
             }
+        }
+
+        args.ui_settings_route = args.ui_settings_route.trim_matches('/').to_string();
+        if args.ui_settings_route.is_empty() {
+            args.ui_settings_route = default_ui_settings_route();
         }
 
         if let Some(log_format) = matches.get_one::<String>("log-format") {
@@ -643,6 +652,10 @@ fn default_addrs() -> Vec<BindAddr> {
 
 fn default_port() -> u16 {
     5000
+}
+
+fn default_ui_settings_route() -> String {
+    "__dufs__/ui-settings".to_string()
 }
 
 #[cfg(test)]

@@ -60,6 +60,7 @@ const BUF_SIZE: usize = 65536;
 const EDITABLE_TEXT_MAX_SIZE: u64 = 4194304; // 4M
 const RESUMABLE_UPLOAD_MIN_SIZE: u64 = 20971520; // 20M
 const HEALTH_CHECK_PATH: &str = "__dufs__/health";
+const UI_SETTINGS_MAX_SIZE: usize = 16384;
 pub const MAX_SUBPATHS_COUNT: u64 = 1000;
 
 pub struct Server {
@@ -222,6 +223,19 @@ impl Server {
             return Ok(res);
         } else if method.as_str() == "LOGOUT" {
             self.auth_reject(&mut res)?;
+            return Ok(res);
+        }
+
+        if relative_path == self.args.ui_settings_route {
+            if method == Method::PUT {
+                if user.is_none() {
+                    self.auth_reject(&mut res)?;
+                } else {
+                    self.handle_ui_settings_update(req, &mut res).await?;
+                }
+            } else {
+                *res.status_mut() = StatusCode::METHOD_NOT_ALLOWED;
+            }
             return Ok(res);
         }
 
@@ -848,9 +862,59 @@ impl Server {
 
             *res.body_mut() = body_full(r#"{"status":"OK"}"#);
             Ok(true)
+        } else if req_path == self.args.ui_settings_route {
+            self.handle_ui_settings_get(res).await?;
+            Ok(true)
         } else {
             Ok(false)
         }
+    }
+
+    async fn handle_ui_settings_get(&self, res: &mut Response) -> Result<()> {
+        res.headers_mut()
+            .typed_insert(ContentType::from(mime_guess::mime::APPLICATION_JSON));
+        if let Some(path) = &self.args.ui_settings_path {
+            match fs::read(path).await {
+                Ok(data) => {
+                    *res.body_mut() = body_full(data);
+                }
+                Err(err) if err.kind() == io::ErrorKind::NotFound => {
+                    *res.body_mut() = body_full("{}");
+                }
+                Err(err) => return Err(err.into()),
+            }
+        } else {
+            *res.body_mut() = body_full("{}");
+        }
+        Ok(())
+    }
+
+    async fn handle_ui_settings_update(&self, req: Request, res: &mut Response) -> Result<()> {
+        let Some(path) = &self.args.ui_settings_path else {
+            status_not_found(res);
+            return Ok(());
+        };
+        let body = req.into_body().collect().await?.to_bytes();
+        if body.len() > UI_SETTINGS_MAX_SIZE {
+            status_bad_request(res, "UI settings payload is too large");
+            return Ok(());
+        }
+        let value: serde_json::Value = match serde_json::from_slice::<serde_json::Value>(&body) {
+            Ok(value) if value.is_object() => value,
+            _ => {
+                status_bad_request(res, "UI settings must be a JSON object");
+                return Ok(());
+            }
+        };
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).await?;
+        }
+        let data = serde_json::to_vec_pretty(&value)?;
+        fs::write(path, data).await?;
+        res.headers_mut()
+            .typed_insert(ContentType::from(mime_guess::mime::APPLICATION_JSON));
+        *res.body_mut() = body_full(r#"{"ok":true}"#);
+        Ok(())
     }
 
     async fn handle_send_file(
@@ -1324,6 +1388,10 @@ impl Server {
                 .replace(
                     "__ASSETS_PREFIX__",
                     &format!("{}{}", self.args.uri_prefix, self.assets_prefix),
+                )
+                .replace(
+                    "__UI_SETTINGS_ROUTE__",
+                    &format!("{}{}", self.args.uri_prefix, self.args.ui_settings_route),
                 )
                 .replace("__INDEX_DATA__", &index_data)
         };
