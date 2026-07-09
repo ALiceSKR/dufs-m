@@ -304,6 +304,11 @@
                 return;
             }
             if (event.target.dataset.action === "save") {
+                if (!inputs.pageTitle.value.trim()) {
+                    alert("页面标题不能为空");
+                    inputs.pageTitle.focus();
+                    return;
+                }
                 event.target.disabled = true;
                 updateDraftFromInputs();
                 draft.activeTheme = editingTheme;
