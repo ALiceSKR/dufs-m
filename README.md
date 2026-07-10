@@ -1,435 +1,305 @@
-# Dufs
+# dufs-m
 
-[![CI](https://github.com/sigoden/dufs/actions/workflows/ci.yaml/badge.svg)](https://github.com/sigoden/dufs/actions/workflows/ci.yaml)
-[![Crates](https://img.shields.io/crates/v/dufs.svg)](https://crates.io/crates/dufs)
-[![Docker Pulls](https://img.shields.io/docker/pulls/sigoden/dufs)](https://hub.docker.com/r/sigoden/dufs)
+这是基于 `dufs 0.46.0` 修改的个人文件共享版本。后端还是 Rust，前端是已经打包好的 Vue/Vuetify 静态资源，主要改动集中在 `src/`、`assets/custom-settings.js`、`assets/index.css`、`assets/index.html` 和部署脚本里。
 
-Dufs is a distinctive utility file server that supports static serving, uploading, searching, accessing control, webdav...
+## 界面展示
 
-![demo](https://user-images.githubusercontent.com/4012553/220513063-ff0f186b-ac54-4682-9af4-47a9781dee0d.png)
+![文件列表展示](docs/images/file-list.png)
 
-## Features
+![界面设置展示](docs/images/settings-panel.png)
 
-- Serve static files
-- Download folder as zip file
-- Upload files and folders (Drag & Drop)
-- Create/Edit/Search files
-- Resumable/partial uploads/downloads
-- Access control
-- Support https
-- Support webdav
-- Easy to use with curl
+![登录弹窗展示](docs/images/login-panel.png)
 
-## Install
+## 修改内容
 
-### With cargo
+- 登录改成页面中间的自定义弹窗，避免浏览器原生黑色 Basic Auth 弹窗；登录成功后写入 `dufs_auth` cookie。
+- 浏览器关闭后自动退出登录：登录状态只在当前浏览器会话中保留，重新打开浏览器需要再次登录。
+- 增加 `ui-settings.json` 主题配置，支持默认主题和每个登录用户自己的主题。
+- 增加 `ui-settings-users` 权限列表，只有列表里的用户能看到设置按钮并修改主题。
+- 匿名用户不能修改主题，但可以点击页面标题在主题一、主题二之间切换。
+- 用户的主题会保存到服务端登入后切换每个用户的，并保存在浏览器上，匿名用户则是使用最后登入用户的主题
+- 设置弹窗可以调整文件列表白色透明度、模糊度、顶部图标颜色、列表文本/图标颜色和页面标题。
+- 页面标题保存时不能为空，避免标题被删空后不好点击切换主题。
+- 新建文件、新建文件夹等弹窗样式改成和设置弹窗一致的半透明玻璃风格。
+- 增加樱花鼠标素材和鼠标位置产生花瓣飘落效果，动画按真实时间步进，避免不同刷新率电脑下落速度明显不一致。
+- 背景图默认使用随机图片接口，刷新就会重新拉取随机背景图，文件列表和顶部栏覆盖在背景上，透明度由主题控制。
+- 增加 `scripts/dufsctl.sh`，用于本机编译、安装 systemd 服务、重启和查看状态。
 
-```
-cargo install dufs
-```
-
-### With docker
-
-```
-docker run -v `pwd`:/data -p 5000:5000 --rm sigoden/dufs /data -A
-```
-
-### With [Homebrew](https://brew.sh)
-
-```
-brew install dufs
-```
-
-### Binaries on macOS, Linux, Windows
-
-Download from [Github Releases](https://github.com/sigoden/dufs/releases), unzip and add dufs to your $PATH.
-
-## CLI
-
-```
-Dufs is a distinctive utility file server - https://github.com/sigoden/dufs
-
-Usage: dufs [OPTIONS] [serve-path]
-
-Arguments:
-  [serve-path]  Specific path to serve [default: .]
-
-Options:
-  -c, --config <file>        Specify configuration file
-  -b, --bind <addrs>         Specify bind address or unix socket
-  -p, --port <port>          Specify port to listen on [default: 5000]
-      --path-prefix <path>   Specify a path prefix
-      --hidden <value>       Hide paths from directory listings, e.g. tmp,*.log,*.lock
-  -a, --auth <rules>         Add auth roles, e.g. user:pass@/dir1:rw,/dir2
-  -A, --allow-all            Allow all operations
-      --allow-upload         Allow upload files/folders
-      --allow-delete         Allow delete files/folders
-      --allow-search         Allow search files/folders
-      --allow-symlink        Allow symlink to files/folders outside root directory
-      --allow-archive        Allow download folders as archive file
-      --allow-hash           Allow ?hash query to get file sha256 hash
-      --enable-cors          Enable CORS, sets `Access-Control-Allow-Origin: *`
-      --render-index         Serve index.html when requesting a directory, returns 404 if not found index.html
-      --render-try-index     Serve index.html when requesting a directory, returns directory listing if not found index.html
-      --render-spa           Serve SPA(Single Page Application)
-      --assets <path>        Set the path to the assets directory for overriding the built-in assets
-      --log-format <format>  Customize http log format
-      --log-file <file>      Specify the file to save logs to, other than stdout/stderr
-      --compress <level>     Set zip compress level [default: low] [possible values: none, low, medium, high]
-      --completions <shell>  Print shell completion script for <shell> [possible values: bash, elvish, fish, powershell, zsh]
-      --tls-cert <path>      Path to an SSL/TLS certificate to serve with HTTPS
-      --tls-key <path>       Path to the SSL/TLS certificate's private key
-  -h, --help                 Print help
-  -V, --version              Print version
-```
-
-## Examples
-
-Serve current working directory in read-only mode
-
-```
-dufs
-```
-
-Allow all operations like upload/delete/search/create/edit...
-
-```
-dufs -A
-```
-
-Only allow upload operation
-
-```
-dufs --allow-upload
-```
-
-Serve a specific directory
-
-```
-dufs Downloads
-```
-
-Serve a single file
-
-```
-dufs linux-distro.iso
-```
-
-Serve a single-page application like react/vue
-
-```
-dufs --render-spa
-```
-
-Serve a static website with index.html
-
-```
-dufs --render-index
-```
-
-Require username/password
-
-```
-dufs -a admin:123@/:rw
-```
-
-Listen on specific host:ip 
-
-```
-dufs -b 127.0.0.1 -p 80
-```
-
-Listen on unix socket
-```
-dufs -b /tmp/dufs.socket
-```
-
-Use https
+## 编译
 
-```
-dufs --tls-cert my.crt --tls-key my.key
-```
-
-## API
-
-Upload a file
-
-```sh
-curl -T path-to-file http://127.0.0.1:5000/new-path/path-to-file
-```
-
-Download a file
-```sh
-curl http://127.0.0.1:5000/path-to-file           # download the file
-curl http://127.0.0.1:5000/path-to-file?hash      # retrieve the sha256 hash of the file
-```
-
-Download a folder as zip file
-
-```sh
-curl -o path-to-folder.zip http://127.0.0.1:5000/path-to-folder?zip
-```
-
-Delete a file/folder
-
-```sh
-curl -X DELETE http://127.0.0.1:5000/path-to-file-or-folder
-```
-
-Create a directory
-
-```sh
-curl -X MKCOL http://127.0.0.1:5000/path-to-folder
-```
-
-Move the file/folder to the new path
-
-```sh
-curl -X MOVE http://127.0.0.1:5000/path -H "Destination: http://127.0.0.1:5000/new-path"
-```
-
-List/search directory contents
-
-```sh
-curl http://127.0.0.1:5000?q=Dockerfile           # search for files, similar to `find -name Dockerfile`
-curl http://127.0.0.1:5000?simple                 # output names only, similar to `ls -1`
-curl http://127.0.0.1:5000?json                   # output paths in json format
-```
-
-With authorization (Both basic or digest auth works)
-
-```sh
-curl http://127.0.0.1:5000/file --user user:pass                 # basic auth
-curl http://127.0.0.1:5000/file --user user:pass --digest        # digest auth
-```
-
-Resumable downloads
-
-```sh
-curl -C- -o file http://127.0.0.1:5000/file
-```
+需要 Rust 工具链：
 
-Resumable uploads
-
-```sh
-upload_offset=$(curl -I -s http://127.0.0.1:5000/file | tr -d '\r' | sed -n 's/content-length: //p')
-dd skip=$upload_offset if=file status=none ibs=1 | \
-  curl -X PATCH -H "X-Update-Range: append" --data-binary @- http://127.0.0.1:5000/file
+```bash
+cargo build --release
 ```
 
-Health checks
+编译结果在：
 
-```sh
-curl http://127.0.0.1:5000/__dufs__/health
+```bash
+target/release/dufs
 ```
-
-<details>
-<summary><h2>Advanced Topics</h2></summary>
 
-### Access Control
+也可以用脚本：
 
-Dufs supports account based access control. You can control who can do what on which path with `--auth`/`-a`.
-
-```
-dufs -a admin:admin@/:rw -a guest:guest@/
-dufs -a user:pass@/:rw,/dir1 -a @/
+```bash
+scripts/dufsctl.sh build
 ```
-
-1. Use `@` to separate the account and paths. No account means anonymous user.
-2. Use `:` to separate the username and password of the account.
-3. Use `,` to separate paths.
-4. Use path suffix `:rw`/`:ro` set permissions: `read-write`/`read-only`. `:ro` can be omitted.
-
-- `-a admin:admin@/:rw`: `admin` has complete permissions for all paths.
-- `-a guest:guest@/`: `guest` has read-only permissions for all paths.
-- `-a user:pass@/:rw,/dir1`: `user` has read-write permissions for `/*`, has read-only permissions for `/dir1/*`.
-- `-a @/`: All paths is publicly accessible, everyone can view/download it.
 
-**Auth permissions are restricted by dufs global permissions.** If dufs does not enable upload permissions via `--allow-upload`, then the account will not have upload permissions even if it is granted `read-write`(`:rw`) permissions.
+## 本机部署
 
-#### Hashed Password
+当前工程自带了 `dufs-share.yaml` 和 `dufs-share.service`，默认按源码目录部署：
 
-DUFS supports the use of sha-512 hashed password.
-
-Create hashed password:
-
-```sh
-$ openssl passwd -6 123456 # or `mkpasswd -m sha-512 123456`
-$6$tWMB51u6Kb2ui3wd$5gVHP92V9kZcMwQeKTjyTRgySsYJu471Jb1I6iHQ8iZ6s07GgCIO69KcPBRuwPE5tDq05xMAzye0NxVKuJdYs/
+```bash
+scripts/dufsctl.sh all
 ```
 
-Use hashed password:
+等价于：
 
-```sh
-dufs -a 'admin:$6$tWMB51u6Kb2ui3wd$5gVHP92V9kZcMwQeKTjyTRgySsYJu471Jb1I6iHQ8iZ6s07GgCIO69KcPBRuwPE5tDq05xMAzye0NxVKuJdYs/@/:rw'
+```bash
+scripts/dufsctl.sh build deploy restart
 ```
-> The hashed password contains `$6`, which can expand to a variable in some shells, so you have to use **single quotes** to wrap it.
-
-Two important things for hashed passwords:
 
-1. Dufs only supports sha-512 hashed passwords, so ensure that the password string always starts with `$6$`.
-2. Digest authentication does not function properly with hashed passwords.
+查看状态：
 
-
-### Hide Paths
-
-Dufs supports hiding paths from directory listings via option `--hidden <glob>,...`.
-
-```
-dufs --hidden .git,.DS_Store,tmp
+```bash
+scripts/dufsctl.sh status
 ```
 
-> The glob used in --hidden only matches file and directory names, not paths. So `--hidden dir1/file` is invalid.
+默认服务名是 `dufs-share`。如果需要换服务名或配置文件：
 
-```sh
-dufs --hidden '.*'                          # hidden dotfiles
-dufs --hidden '*/'                          # hidden all folders
-dufs --hidden '*.log,*.lock'                # hidden by exts
-dufs --hidden '*.log' --hidden '*.lock'
+```bash
+SERVICE_NAME=dufs-test CONFIG_FILE=/path/to/dufs-share.yaml scripts/dufsctl.sh all
 ```
 
-### Log Format
+`deploy` 会把 systemd service 安装到 `/etc/systemd/system/dufs-share.service`，并自动创建缺失的 `ui-settings.json`。如果配置里没有写 `ui-settings-path`，会默认使用 `assets/ui-settings.json`。
 
-Dufs supports customize http log format with option `--log-format`.
+## 115 设备部署方式
 
-The log format can use following variables.
+115 上当前推荐结构：
 
-| variable     | description                                                               |
-| ------------ | ------------------------------------------------------------------------- |
-| $remote_addr | client address                                                            |
-| $remote_user | user name supplied with authentication                                    |
-| $request     | full original request line                                                |
-| $status      | response status                                                           |
-| $http_       | arbitrary request header field. examples: $http_user_agent, $http_referer |
-
-
-The default log format is `'$time_iso8601 $log_level - $remote_addr "$request" $status`.
-```
-2022-08-06T06:59:31+08:00 INFO - 127.0.0.1 "GET /" 200
+```text
+/home/muskr/code/dufs            源码
+/usr/local/bin/dufs              运行二进制
+/etc/dufs/dufs-share.yaml        运行配置
+/etc/dufs/ui-settings.json       主题配置
+/opt/dufs-assets                 前端 assets
+/root/shar                       共享目录
 ```
 
-A json log format is also supported.
-```
-dufs --log-format '{"time":"$time_local","addr":"$remote_addr","uri":"$request_uri", "method":"$request_method","status":$status}'
+在 115 本机编译：
 
-{"time":"2022-08-06T06:59:31+08:00","addr":"127.0.0.1","uri":"/", "method":"GET","status":200}
+```bash
+cd /home/muskr/code/dufs
+cargo build --release
 ```
 
-Disable http log
-```
-dufs --log-format=''
-```
+安装编译结果和 assets：
 
-Log user-agent
-```
-dufs --log-format '$remote_addr "$request" $status $http_user_agent'
+```bash
+sudo install -m 0755 target/release/dufs /usr/local/bin/dufs
+sudo mkdir -p /opt/dufs-assets /etc/dufs
+sudo cp -a assets/. /opt/dufs-assets/.
+sudo systemctl restart dufs-share
+sudo systemctl status dufs-share --no-pager
 ```
-```
-2022-08-06T06:53:55+08:00 INFO - 127.0.0.1 "GET /" 200 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36
-```
 
-Log remote-user
-```
-dufs --log-format '$remote_addr $remote_user "$request" $status' -a /@admin:admin -a /folder1@user1:pass1
-```
-```
-2022-08-06T07:04:37+08:00 INFO - 127.0.0.1 admin "GET /" 200
-```
+115 的 service 示例：
 
-## Environment variables
+```ini
+[Unit]
+Description=Dufs file share
+After=network-online.target
+Wants=network-online.target
 
-All options can be set using environment variables prefixed with `DUFS_`.
+[Service]
+Type=simple
+WorkingDirectory=/root/shar
+ExecStart=/usr/local/bin/dufs --config /etc/dufs/dufs-share.yaml
+Restart=on-failure
+RestartSec=3
 
+[Install]
+WantedBy=multi-user.target
 ```
-[serve-path]                DUFS_SERVE_PATH="."
-    --config <file>         DUFS_CONFIG=config.yaml
--b, --bind <addrs>          DUFS_BIND=0.0.0.0
--p, --port <port>           DUFS_PORT=5000
-    --path-prefix <path>    DUFS_PATH_PREFIX=/dufs
-    --hidden <value>        DUFS_HIDDEN=tmp,*.log,*.lock
--a, --auth <rules>          DUFS_AUTH="admin:admin@/:rw|@/" 
--A, --allow-all             DUFS_ALLOW_ALL=true
-    --allow-upload          DUFS_ALLOW_UPLOAD=true
-    --allow-delete          DUFS_ALLOW_DELETE=true
-    --allow-search          DUFS_ALLOW_SEARCH=true
-    --allow-symlink         DUFS_ALLOW_SYMLINK=true
-    --allow-archive         DUFS_ALLOW_ARCHIVE=true
-    --allow-hash            DUFS_ALLOW_HASH=true
-    --enable-cors           DUFS_ENABLE_CORS=true
-    --render-index          DUFS_RENDER_INDEX=true
-    --render-try-index      DUFS_RENDER_TRY_INDEX=true
-    --render-spa            DUFS_RENDER_SPA=true
-    --assets <path>         DUFS_ASSETS=./assets
-    --log-format <format>   DUFS_LOG_FORMAT=""
-    --log-file <file>       DUFS_LOG_FILE=./dufs.log
-    --compress <compress>   DUFS_COMPRESS=low
-    --tls-cert <path>       DUFS_TLS_CERT=cert.pem
-    --tls-key <path>        DUFS_TLS_KEY=key.pem
-```
-
-## Configuration File
 
-You can specify and use the configuration file by selecting the option `--config <path-to-config.yaml>`.
+## 配置示例
 
-The following are the configuration items:
+`dufs-share.yaml` 示例：
 
 ```yaml
-serve-path: '.'
+serve-path: /root/shar
 bind: 0.0.0.0
-port: 5000
-path-prefix: /dufs
-hidden:
-  - tmp
-  - '*.log'
-  - '*.lock'
+port: 80
+assets: /opt/dufs-assets
+ui-settings-path: /etc/dufs/ui-settings.json
+ui-settings-route: __dufs__/ui-settings
+ui-settings-users:
+  - muskr
 auth:
-  - admin:admin@/:rw
-  - user:pass@/src:rw,/share
-  - '@/'  # According to the YAML spec, quoting is required.
-allow-all: false
+  - 'muskr:CHANGE_ME@/:rw'
+  - '@/'
 allow-upload: true
 allow-delete: true
 allow-search: true
-allow-symlink: true
 allow-archive: true
-allow-hash: true
-enable-cors: true
-render-index: true
-render-try-index: true
-render-spa: true
-assets: ./assets/
-log-format: '$remote_addr "$request" $status $http_user_agent'
-log-file: ./dufs.log
-compress: low
-tls-cert: tests/data/cert.pem
-tls-key: tests/data/key_pkcs1.pem
 ```
 
-### Customize UI
+关键字段说明：
 
-Dufs allows users to customize the UI with your own assets.
+- `serve-path` 是网页里展示和共享的目录。
+- `assets` 指向前端资源目录，必须包含 `index.html`。
+- `ui-settings-path` 是主题配置保存位置；不写时会默认使用 `assets/ui-settings.json`。
+- `ui-settings-route` 是前端读写主题配置的接口路径，默认是 `__dufs__/ui-settings`。
+- `ui-settings-users` 是允许打开设置弹窗并保存主题的用户列表。
+- `auth` 里 `muskr:CHANGE_ME@/:rw` 表示用户 `muskr` 对根目录有读写权限。
+- `auth` 里 `@/` 表示匿名用户可以访问根目录，适合匿名下载。
+- `allow-upload` 开启上传。
+- `allow-delete` 开启删除。
+- `allow-search` 开启搜索。
+- `allow-archive` 开启目录打包下载。
 
+权限规则常用写法：
+
+```yaml
+auth:
+  - 'admin:password@/:rw'
+  - 'user:password@/public,/download'
+  - '@/'
 ```
-dufs --assets my-assets-dir/
+
+`rw` 表示读写；没有 `:rw` 时通常只读。匿名用户用空用户名规则 `@/`。
+
+## 主题配置
+
+主题配置文件结构：
+
+```json
+{
+  "default": {
+    "activeTheme": "theme1",
+    "pageTitle": "Dustin's file share",
+    "themes": {
+      "theme1": {
+        "panelOpacity": 0.5,
+        "panelBlur": 1,
+        "accentColor": "#f7a8c4",
+        "fileNameColor": "#121822"
+      },
+      "theme2": {
+        "panelOpacity": 0.5,
+        "panelBlur": 1,
+        "accentColor": "#f7a8c4",
+        "fileNameColor": "#121822"
+      }
+    }
+  },
+  "users": {}
+}
 ```
 
-> If you only need to make slight adjustments to the current UI, you copy dufs's [assets](https://github.com/sigoden/dufs/tree/main/assets) directory and modify it accordingly. The current UI doesn't use any frameworks, just plain HTML/JS/CSS. As long as you have some basic knowledge of web development, it shouldn't be difficult to modify.
+行为说明：
 
-Your assets folder must contains a `index.html` file.
+- 未登录用户默认使用 `default` 主题。
+- 用户登录后，会读取该用户自己的主题配置。
+- 用户保存主题后，会写入 `users.<username>`。
+- 登录用户的主题会同步到当前浏览器，之后匿名打开时也可以沿用上一次登录用户的主题效果。
+- 只有 `ui-settings-users` 里的用户能看到设置按钮并保存配置。
+- 普通登录用户和匿名用户只能点击页面标题切换主题一、主题二，不能修改设置。
 
-`index.html` can use the following placeholder variables to retrieve internal data.
+## 背景图片
 
-- `__INDEX_DATA__`: directory listing data
-- `__ASSETS_PREFIX__`: assets url prefix
+当前背景图在 `assets/index.html` 里设置：
 
-> A customized 404.html page is also supported.
+```js
+window.__CUSTOM_BACKGROUND_URL__ = `https://www.dmoe.cc/random.php?_dufs_bg=${Date.now()}_${Math.random().toString(36).slice(2)}`;
+```
 
-</details>
+如果要换成固定网络图片：
 
-## License
+```js
+window.__CUSTOM_BACKGROUND_URL__ = "https://example.com/background.jpg";
+```
 
-Copyright (c) 2022-2024 dufs-developers.
+如果要插入本地图片：
 
-dufs is made available under the terms of either the MIT License or the Apache License 2.0, at your option.
+1. 在 assets 里创建目录：
 
-See the LICENSE-APACHE and LICENSE-MIT files for license details.
+```bash
+mkdir -p assets/backgrounds
+```
+
+2. 把图片放进去，例如：
+
+```text
+assets/backgrounds/bg01.jpg
+```
+
+3. 修改 `assets/index.html`：
+
+```js
+window.__CUSTOM_BACKGROUND_URL__ = `${window.__DUFS_PREFIX__}backgrounds/bg01.jpg`;
+```
+
+4. 重新同步 assets 并重启服务：
+
+```bash
+sudo cp -a assets/. /opt/dufs-assets/.
+sudo systemctl restart dufs-share
+```
+
+如果想随机使用多张本地图片，可以这样写：
+
+```js
+const backgrounds = [
+    `${window.__DUFS_PREFIX__}backgrounds/bg01.jpg`,
+    `${window.__DUFS_PREFIX__}backgrounds/bg02.jpg`,
+    `${window.__DUFS_PREFIX__}backgrounds/bg03.jpg`,
+];
+window.__CUSTOM_BACKGROUND_URL__ = backgrounds[Math.floor(Math.random() * backgrounds.length)];
+```
+
+注意：目前还没有做“网页上传图片后自动作为背景”的功能。现在添加背景图需要手动放到 `assets/backgrounds/` 并修改 `assets/index.html`。
+
+## 樱花鼠标素材
+
+鼠标光标和花瓣素材在：
+
+```text
+assets/src/sakura/
+```
+
+主要文件：
+
+- `normal.cur` 默认鼠标。
+- `link.cur` 链接和按钮鼠标。
+- `text.cur` 输入框鼠标。
+- `petal.png` 飘落花瓣图片。
+
+如果只想替换花瓣样式，替换 `assets/src/sakura/petal.png` 后重新同步 assets 并刷新浏览器即可。
+
+## 常用维护命令
+
+本机：
+
+```bash
+scripts/dufsctl.sh build restart status
+```
+
+115：
+
+```bash
+cd /home/muskr/code/dufs
+cargo build --release
+sudo install -m 0755 target/release/dufs /usr/local/bin/dufs
+sudo cp -a assets/. /opt/dufs-assets/.
+sudo systemctl restart dufs-share
+systemctl status dufs-share --no-pager
+```
+
+打包源码和编译结果：
+
+```bash
+cd /home/muskr/code
+tar --exclude=dufs/target --exclude=dufs/.git -czf /root/shar/dufs-source.tgz dufs
+tar -czf /root/shar/dufs-bin.tgz -C /home/muskr/code/dufs/target/release dufs
+```
