@@ -296,6 +296,7 @@ pub struct Args {
     pub enable_cors: bool,
     pub assets: Option<PathBuf>,
     pub ui_settings_path: Option<PathBuf>,
+    pub ui_settings_users: Vec<String>,
     #[serde(default = "default_ui_settings_route")]
     #[default(default_ui_settings_route())]
     pub ui_settings_route: String,
@@ -413,6 +414,12 @@ impl Args {
 
         if let Some(assets_path) = &args.assets {
             args.assets = Some(Args::sanitize_assets_path(assets_path)?);
+        }
+
+        if args.ui_settings_path.is_none() {
+            if let Some(assets_path) = &args.assets {
+                args.ui_settings_path = Some(assets_path.join("ui-settings.json"));
+            }
         }
 
         if let Some(assets_path) = &args.assets {

@@ -155,6 +155,7 @@ impl Server {
         };
 
         if method == Method::GET
+            && relative_path != self.args.ui_settings_route
             && self
                 .handle_internal(&relative_path, headers, &mut res)
                 .await?
@@ -242,11 +243,18 @@ impl Server {
         }
 
         if relative_path == self.args.ui_settings_route {
-            if method == Method::PUT {
-                if user.is_none() {
-                    self.auth_reject(&mut res)?;
+            if method == Method::GET {
+                self.handle_ui_settings_get(user.as_deref(), &mut res)
+                    .await?;
+            } else if method == Method::PUT {
+                if let Some(user) = user.as_deref() {
+                    if self.can_manage_ui_settings(user) {
+                        self.handle_ui_settings_update(req, user, &mut res).await?;
+                    } else {
+                        status_forbid(&mut res);
+                    }
                 } else {
-                    self.handle_ui_settings_update(req, &mut res).await?;
+                    self.auth_reject(&mut res)?;
                 }
             } else {
                 *res.status_mut() = StatusCode::METHOD_NOT_ALLOWED;
@@ -877,34 +885,26 @@ impl Server {
 
             *res.body_mut() = body_full(r#"{"status":"OK"}"#);
             Ok(true)
-        } else if req_path == self.args.ui_settings_route {
-            self.handle_ui_settings_get(res).await?;
-            Ok(true)
         } else {
             Ok(false)
         }
     }
 
-    async fn handle_ui_settings_get(&self, res: &mut Response) -> Result<()> {
+    async fn handle_ui_settings_get(&self, user: Option<&str>, res: &mut Response) -> Result<()> {
         res.headers_mut()
             .typed_insert(ContentType::from(mime_guess::mime::APPLICATION_JSON));
-        if let Some(path) = &self.args.ui_settings_path {
-            match fs::read(path).await {
-                Ok(data) => {
-                    *res.body_mut() = body_full(data);
-                }
-                Err(err) if err.kind() == io::ErrorKind::NotFound => {
-                    *res.body_mut() = body_full("{}");
-                }
-                Err(err) => return Err(err.into()),
-            }
-        } else {
-            *res.body_mut() = body_full("{}");
-        }
+        let value = self.read_ui_settings_store().await?;
+        let selected = select_ui_settings(&value, user);
+        *res.body_mut() = body_full(serde_json::to_vec_pretty(&selected)?);
         Ok(())
     }
 
-    async fn handle_ui_settings_update(&self, req: Request, res: &mut Response) -> Result<()> {
+    async fn handle_ui_settings_update(
+        &self,
+        req: Request,
+        user: &str,
+        res: &mut Response,
+    ) -> Result<()> {
         let Some(path) = &self.args.ui_settings_path else {
             status_not_found(res);
             return Ok(());
@@ -924,12 +924,40 @@ impl Server {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).await?;
         }
-        let data = serde_json::to_vec_pretty(&value)?;
-        fs::write(path, data).await?;
+        let mut store = normalize_ui_settings_store(self.read_ui_settings_store().await?);
+        let root = store
+            .as_object_mut()
+            .expect("UI settings store must be an object");
+        let users = root
+            .entry("users")
+            .or_insert_with(|| serde_json::json!({}))
+            .as_object_mut()
+            .expect("UI settings users must be an object");
+        users.insert(user.to_string(), value);
+        fs::write(path, serde_json::to_vec_pretty(&store)?).await?;
         res.headers_mut()
             .typed_insert(ContentType::from(mime_guess::mime::APPLICATION_JSON));
         *res.body_mut() = body_full(r#"{"ok":true}"#);
         Ok(())
+    }
+
+    async fn read_ui_settings_store(&self) -> Result<serde_json::Value> {
+        let Some(path) = &self.args.ui_settings_path else {
+            return Ok(serde_json::json!({}));
+        };
+        match fs::read(path).await {
+            Ok(data) => Ok(serde_json::from_slice::<serde_json::Value>(&data)
+                .unwrap_or_else(|_| serde_json::json!({}))),
+            Err(err) if err.kind() == io::ErrorKind::NotFound => Ok(serde_json::json!({})),
+            Err(err) => Err(err.into()),
+        }
+    }
+
+    fn can_manage_ui_settings(&self, user: &str) -> bool {
+        self.args
+            .ui_settings_users
+            .iter()
+            .any(|allowed| allowed == user)
     }
 
     async fn handle_send_file(
@@ -1373,6 +1401,10 @@ impl Server {
             normalize_path(path.strip_prefix(&self.args.serve_path)?)
         );
         let readwrite = access_paths.perm().readwrite();
+        let allow_ui_settings = user
+            .as_deref()
+            .map(|user| self.can_manage_ui_settings(user))
+            .unwrap_or(false);
         let data = IndexData {
             kind: DataKind::Index,
             href,
@@ -1381,6 +1413,7 @@ impl Server {
             allow_delete: self.args.allow_delete && readwrite,
             allow_search: self.args.allow_search,
             allow_archive: self.args.allow_archive,
+            allow_ui_settings,
             dir_exists: exist,
             auth: self.args.auth.has_users(),
             user,
@@ -1655,6 +1688,7 @@ pub struct IndexData {
     pub allow_delete: bool,
     pub allow_search: bool,
     pub allow_archive: bool,
+    pub allow_ui_settings: bool,
     pub dir_exists: bool,
     pub auth: bool,
     pub user: Option<String>,
@@ -1894,6 +1928,50 @@ fn extract_cache_headers(meta: &Metadata) -> Option<(ETag, LastModified)> {
     let etag = format!(r#""{timestamp}-{size}""#).parse::<ETag>().ok()?;
     let last_modified = LastModified::from(mtime);
     Some((etag, last_modified))
+}
+
+fn normalize_ui_settings_store(value: serde_json::Value) -> serde_json::Value {
+    if !value.is_object() {
+        return serde_json::json!({
+            "default": {},
+            "users": {},
+        });
+    }
+    let has_scoped_settings = value.get("default").is_some() || value.get("users").is_some();
+    if has_scoped_settings {
+        let default = value
+            .get("default")
+            .filter(|v| v.is_object())
+            .cloned()
+            .unwrap_or_else(|| serde_json::json!({}));
+        let users = value
+            .get("users")
+            .filter(|v| v.is_object())
+            .cloned()
+            .unwrap_or_else(|| serde_json::json!({}));
+        serde_json::json!({
+            "default": default,
+            "users": users,
+        })
+    } else {
+        serde_json::json!({
+            "default": value,
+            "users": {},
+        })
+    }
+}
+
+fn select_ui_settings(value: &serde_json::Value, user: Option<&str>) -> serde_json::Value {
+    let store = normalize_ui_settings_store(value.clone());
+    let default = store
+        .get("default")
+        .filter(|v| v.is_object())
+        .cloned()
+        .unwrap_or_else(|| serde_json::json!({}));
+    user.and_then(|user| store.get("users").and_then(|users| users.get(user)))
+        .filter(|v| v.is_object())
+        .cloned()
+        .unwrap_or(default)
 }
 
 fn status_forbid(res: &mut Response) {

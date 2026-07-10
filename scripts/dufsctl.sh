@@ -41,16 +41,23 @@ deploy() {
 }
 
 ensure_ui_settings() {
+    local assets_path
     local settings_path
 
     if [[ -f "${CONFIG_FILE}" ]]; then
         settings_path="$(sed -n 's/^[[:space:]]*ui-settings-path:[[:space:]]*//p' "${CONFIG_FILE}" | tail -n 1 | sed "s/^['\"]//;s/['\"]$//")"
+        assets_path="$(sed -n 's/^[[:space:]]*assets:[[:space:]]*//p' "${CONFIG_FILE}" | tail -n 1 | sed "s/^['\"]//;s/['\"]$//")"
     else
         settings_path=""
+        assets_path=""
     fi
 
     if [[ -z "${settings_path}" ]]; then
-        settings_path="${ROOT_DIR}/ui-settings.json"
+        if [[ -n "${assets_path}" ]]; then
+            settings_path="${assets_path%/}/ui-settings.json"
+        else
+            settings_path="${ROOT_DIR}/assets/ui-settings.json"
+        fi
     fi
 
     if [[ -f "${settings_path}" ]]; then
@@ -60,22 +67,25 @@ ensure_ui_settings() {
     mkdir -p "$(dirname -- "${settings_path}")"
     cat >"${settings_path}" <<'EOF'
 {
-  "activeTheme": "theme1",
-  "pageTitle": "Dustin's file share",
-  "themes": {
-    "theme1": {
-      "panelOpacity": 0.5,
-      "panelBlur": 1,
-      "accentColor": "#f7a8c4",
-      "fileNameColor": "#121822"
-    },
-    "theme2": {
-      "panelOpacity": 0.5,
-      "panelBlur": 1,
-      "accentColor": "#f7a8c4",
-      "fileNameColor": "#121822"
+  "default": {
+    "activeTheme": "theme1",
+    "pageTitle": "Dustin's file share",
+    "themes": {
+      "theme1": {
+        "panelOpacity": 0.5,
+        "panelBlur": 1,
+        "accentColor": "#f7a8c4",
+        "fileNameColor": "#121822"
+      },
+      "theme2": {
+        "panelOpacity": 0.5,
+        "panelBlur": 1,
+        "accentColor": "#f7a8c4",
+        "fileNameColor": "#121822"
+      }
     }
-  }
+  },
+  "users": {}
 }
 EOF
 }

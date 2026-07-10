@@ -1,6 +1,13 @@
 (function () {
     const storageKey = "dufs-ui-settings";
+    const sessionAuthKey = "dufs-session-auth";
     const serverSettingsUrl = window.__CUSTOM_UI_SETTINGS_URL__ || "/__dufs__/ui-settings";
+    const initialData = window.__DUFS_INITIAL_DATA__ || window.__INITIAL_DATA__ || {};
+    let currentUser = initialData.user || "";
+    let allowUiSettings = Boolean(window.__DUFS_ALLOW_UI_SETTINGS__);
+    let permissionCheckedUser = currentUser;
+    let pageStateRequest = null;
+    let syncedSettingsUser = currentUser;
     let appliedPageTitle = "";
     const themeFields = ["panelOpacity", "panelBlur", "accentColor", "fileNameColor"];
     const defaults = {
@@ -126,6 +133,9 @@
     }
 
     async function saveSettings(settings) {
+        if (!canManageUiSettings()) {
+            throw new Error("Current user cannot manage UI settings");
+        }
         const next = normalizeSettings(settings);
         const response = await fetch(serverSettingsUrl, {
             method: "PUT",
@@ -151,10 +161,33 @@
 
     function setAuthCookie(authHeader) {
         document.cookie = `dufs_auth=${encodeURIComponent(authHeader)}; Path=/; SameSite=Lax`;
+        sessionStorage.setItem(sessionAuthKey, "1");
     }
 
     function clearAuthCookie() {
         document.cookie = "dufs_auth=; Path=/; Max-Age=0; SameSite=Lax";
+        sessionStorage.removeItem(sessionAuthKey);
+        currentUser = "";
+        allowUiSettings = false;
+        permissionCheckedUser = "";
+    }
+
+    function getCookie(name) {
+        return document.cookie
+            .split(";")
+            .map((part) => part.trim())
+            .find((part) => part.startsWith(`${name}=`));
+    }
+
+    function enforceBrowserSessionLogin() {
+        if (getCookie("dufs_auth") && !sessionStorage.getItem(sessionAuthKey)) {
+            clearAuthCookie();
+            if (initialData.user) {
+                window.location.reload();
+                return true;
+            }
+        }
+        return false;
     }
 
     function storePasswordCredential(username, password) {
@@ -241,11 +274,60 @@
     window.__DUFS_CUSTOM_LOGIN__ = openLoginDialog;
     window.__DUFS_CUSTOM_LOGOUT__ = clearAuthCookie;
 
+    function getSignedInUser() {
+        const domUser = document.querySelector(".topbar-user-name")?.textContent?.trim();
+        return domUser || currentUser || "";
+    }
+
     function isSignedIn() {
-        return Boolean(
-            (window.__INITIAL_DATA__ && window.__INITIAL_DATA__.auth && window.__INITIAL_DATA__.user) ||
-            document.querySelector(".topbar-user-name")
-        );
+        return Boolean(getSignedInUser());
+    }
+
+    function canManageUiSettings() {
+        return Boolean(allowUiSettings);
+    }
+
+    async function refreshPageState() {
+        if (pageStateRequest) {
+            return pageStateRequest;
+        }
+        const url = new URL(window.location.href);
+        url.search = "json=";
+        pageStateRequest = fetch(url, {
+            credentials: "same-origin",
+            headers: { accept: "application/json" },
+        })
+            .then(async (response) => {
+                if (!response.ok) {
+                    throw new Error(`Failed to refresh page state: ${response.status}`);
+                }
+                const data = await response.json();
+                currentUser = data.user || "";
+                allowUiSettings = Boolean(data.allow_ui_settings);
+                permissionCheckedUser = currentUser;
+                return data;
+            })
+            .catch((error) => {
+                console.warn(error);
+                allowUiSettings = false;
+                permissionCheckedUser = getSignedInUser();
+                return null;
+            })
+            .finally(() => {
+                pageStateRequest = null;
+            });
+        return pageStateRequest;
+    }
+
+    async function syncSignedInSettings() {
+        const user = getSignedInUser();
+        if (!user || syncedSettingsUser === user) {
+            return;
+        }
+        syncedSettingsUser = user;
+        const settings = normalizeSettings(await readServerSettings());
+        localStorage.setItem(storageKey, JSON.stringify(settings));
+        applySettings(settings);
     }
 
     function createSettingsDialog() {
@@ -481,7 +563,7 @@
             next.activeTheme = next.activeTheme === "theme1" ? "theme2" : "theme1";
             localStorage.setItem(storageKey, JSON.stringify(next));
             applySettings(next);
-            if (isSignedIn()) {
+            if (canManageUiSettings()) {
                 saveSettings(next).catch((error) => {
                     console.error(error);
                     alert("保存主题切换失败");
@@ -492,14 +574,20 @@
     }
 
     function boot() {
+        if (enforceBrowserSessionLogin()) {
+            return;
+        }
+        const cachedSettings = localStorage.getItem(storageKey);
         applySettings(readSettings());
-        readServerSettings()
-            .then((settings) => {
-                const next = normalizeSettings(settings);
-                localStorage.setItem(storageKey, JSON.stringify(next));
-                applySettings(next);
-            })
-            .catch((error) => console.warn(error));
+        if (isSignedIn() || !cachedSettings) {
+            readServerSettings()
+                .then((settings) => {
+                    const next = normalizeSettings(settings);
+                    localStorage.setItem(storageKey, JSON.stringify(next));
+                    applySettings(next);
+                })
+                .catch((error) => console.warn(error));
+        }
         const titleTimer = setInterval(() => applyPageTitle(appliedPageTitle), 250);
         setTimeout(() => clearInterval(titleTimer), 10000);
         const titleToggleTimer = setInterval(() => {
@@ -510,7 +598,23 @@
         setTimeout(() => clearInterval(titleToggleTimer), 10000);
         let dialogController = null;
         function syncSettingsButton() {
-            if (!dialogController && isSignedIn()) {
+            const user = getSignedInUser();
+            if (!user) {
+                document.querySelector(".dufs-settings-button")?.remove();
+                return;
+            }
+            if (permissionCheckedUser !== user) {
+                refreshPageState()
+                    .then(syncSignedInSettings)
+                    .finally(syncSettingsButton);
+                return;
+            }
+            syncSignedInSettings().catch((error) => console.warn(error));
+            if (!canManageUiSettings()) {
+                document.querySelector(".dufs-settings-button")?.remove();
+                return;
+            }
+            if (!dialogController) {
                 dialogController = bindDialog(createSettingsDialog());
             }
             if (dialogController) {

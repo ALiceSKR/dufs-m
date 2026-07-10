@@ -27,6 +27,8 @@
             },
         };
         window.__INITIAL_DATA__ = JSON.parse(decodeURIComponent(escape(atob("__INDEX_DATA__"))));
+        window.__DUFS_INITIAL_DATA__ = window.__INITIAL_DATA__;
+        window.__DUFS_ALLOW_UI_SETTINGS__ = Boolean(window.__INITIAL_DATA__.allow_ui_settings);
         window.__DUFS_PREFIX__ = "__ASSETS_PREFIX__";
         window.__CUSTOM_UI_SETTINGS_URL__ = "__UI_SETTINGS_ROUTE__";
         window.__CUSTOM_BACKGROUND_URL__ = `https://www.dmoe.cc/random.php?_dufs_bg=${Date.now()}_${Math.random().toString(36).slice(2)}`;
