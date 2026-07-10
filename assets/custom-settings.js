@@ -132,6 +132,135 @@
         }
     }
 
+    function installSakuraCursorEffect() {
+        if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+            return;
+        }
+        const layer = document.createElement("canvas");
+        layer.className = "dufs-sakura-layer";
+        document.body.appendChild(layer);
+        const ctx = layer.getContext("2d");
+        const petalImage = new Image();
+        petalImage.src = `${window.__DUFS_PREFIX__ || ""}src/sakura/petal.png`;
+
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        let lastTime = 0;
+        let lastX = 0;
+        let lastY = 0;
+        let cursorX = width / 2;
+        let cursorY = height / 2;
+        let hasCursor = false;
+        let idleSpawnTime = 0;
+        let rafId = 0;
+        let windTime = 0;
+        let previousFrameTime = 0;
+        const petals = [];
+        const maxPetals = 90;
+
+        function resize() {
+            const ratio = window.devicePixelRatio || 1;
+            width = window.innerWidth;
+            height = window.innerHeight;
+            layer.width = Math.ceil(width * ratio);
+            layer.height = Math.ceil(height * ratio);
+            ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        }
+
+        function spawnPetal(x, y) {
+            const direction = Math.random() > 0.5 ? 1 : -1;
+            petals.push({
+                x: x + Math.random() * 12 - 6,
+                y: y + Math.random() * 10 - 5,
+                vx: (Math.random() * 0.8 + 0.25) * direction,
+                vy: Math.random() * 0.55 + 0.34,
+                size: Math.random() * 11 + 20,
+                age: 0,
+                life: Math.random() * 180 + 260,
+                alpha: Math.random() * 0.22 + 0.56,
+                rotate: Math.random() * Math.PI * 2,
+                rotateSpeed: (Math.random() * 0.006 + 0.002) * direction,
+                flip: Math.random() * Math.PI * 2,
+                flipSpeed: (Math.random() * 0.018 + 0.008) * direction,
+                wobble: Math.random() * Math.PI * 2,
+                wobbleSpeed: Math.random() * 0.035 + 0.018,
+            });
+            if (petals.length > maxPetals) {
+                petals.splice(0, petals.length - maxPetals);
+            }
+        }
+
+        function drawPetal(petal) {
+            const progress = petal.age / petal.life;
+            const fade = progress < 0.12 ? progress / 0.12 : 1;
+            const scaleX = Math.cos(petal.flip) * 0.55 + 0.45;
+            ctx.save();
+            ctx.translate(petal.x, petal.y);
+            ctx.rotate(petal.rotate);
+            ctx.scale(scaleX, 1);
+            ctx.globalAlpha = Math.max(0, petal.alpha * fade);
+            ctx.drawImage(petalImage, -petal.size / 2, -petal.size / 2, petal.size, petal.size);
+            ctx.restore();
+        }
+
+        function loop(now) {
+            const frameScale = previousFrameTime
+                ? clamp((now - previousFrameTime) / 16.67, 0.25, 2.5)
+                : 1;
+            previousFrameTime = now;
+            ctx.clearRect(0, 0, width, height);
+            windTime += 0.008 * frameScale;
+            if (hasCursor && petalImage.complete && now - idleSpawnTime > 700) {
+                idleSpawnTime = now;
+                spawnPetal(cursorX, cursorY);
+            }
+            for (let i = petals.length - 1; i >= 0; i -= 1) {
+                const petal = petals[i];
+                const wind = Math.sin(windTime + petal.y * 0.006) * 0.035;
+                petal.age += frameScale;
+                petal.vx += wind * frameScale;
+                petal.vx *= Math.pow(0.985, frameScale);
+                petal.vy += 0.018 * frameScale;
+                petal.x += (petal.vx + Math.sin(petal.wobble) * 0.45) * frameScale;
+                petal.y += petal.vy * 1.08 * frameScale;
+                petal.rotate += petal.rotateSpeed * frameScale;
+                petal.flip += petal.flipSpeed * frameScale;
+                petal.wobble += petal.wobbleSpeed * frameScale;
+                drawPetal(petal);
+                if (petal.age >= petal.life || petal.y > height + 90 || petal.x < -120 || petal.x > width + 120) {
+                    petals.splice(i, 1);
+                }
+            }
+            rafId = requestAnimationFrame(loop);
+        }
+
+        resize();
+        window.addEventListener("resize", resize);
+        petalImage.addEventListener("load", () => {
+            if (!rafId) {
+                loop();
+            }
+        }, { once: true });
+        document.addEventListener("pointermove", (event) => {
+            if (event.pointerType && event.pointerType !== "mouse") {
+                return;
+            }
+            const now = performance.now();
+            cursorX = event.clientX;
+            cursorY = event.clientY;
+            hasCursor = true;
+            const distance = Math.hypot(event.clientX - lastX, event.clientY - lastY);
+            if (now - lastTime < 34 || distance < 14 || !petalImage.complete) {
+                return;
+            }
+            lastTime = now;
+            idleSpawnTime = now;
+            lastX = event.clientX;
+            lastY = event.clientY;
+            spawnPetal(event.clientX, event.clientY);
+        }, { passive: true });
+    }
+
     async function saveSettings(settings) {
         if (!canManageUiSettings()) {
             throw new Error("Current user cannot manage UI settings");
@@ -577,6 +706,7 @@
         if (enforceBrowserSessionLogin()) {
             return;
         }
+        installSakuraCursorEffect();
         const cachedSettings = localStorage.getItem(storageKey);
         applySettings(readSettings());
         if (isSignedIn() || !cachedSettings) {

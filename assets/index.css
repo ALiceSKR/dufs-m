@@ -27758,6 +27758,53 @@ pre[class*=language-] {
     opacity: unset
 }
 
+html,
+body,
+.v-application {
+    cursor: url("src/sakura/normal.cur") 7 7, auto
+}
+
+button,
+a,
+[role=button],
+.dufs-title-theme-toggle {
+    cursor: url("src/sakura/link.cur") 15 2, pointer
+}
+
+input,
+textarea,
+[contenteditable=true] {
+    cursor: url("src/sakura/text.cur") 15 14, text
+}
+
+.dufs-sakura-layer {
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2147483647
+}
+
+@media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+    html,
+    body,
+    .v-application,
+    button,
+    a,
+    input,
+    textarea,
+    select,
+    [role=button] {
+        cursor: auto
+    }
+
+    .dufs-sakura-layer {
+        display: none
+    }
+}
+
 .dufs-settings-button {
     align-items: center;
     background: transparent;
