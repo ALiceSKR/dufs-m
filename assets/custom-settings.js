@@ -676,6 +676,192 @@
         return true;
     }
 
+    function normalizeMoveDir(path) {
+        path = typeof path === "string" && path ? path.split("?")[0] : "/";
+        path = path.startsWith("/") ? path : `/${path}`;
+        path = path.replace(/\/+/g, "/");
+        return path.endsWith("/") ? path : `${path}/`;
+    }
+
+    function getMoveParentDir(path) {
+        const normalized = normalizeMoveDir(path);
+        if (normalized === "/") {
+            return "/";
+        }
+        const parts = normalized.replace(/^\/|\/$/g, "").split("/");
+        parts.pop();
+        return parts.length ? `/${parts.join("/")}/` : "/";
+    }
+
+    function encodeMovePath(path) {
+        const normalized = path.startsWith("/") ? path : `/${path}`;
+        return normalized.split("/").map((part) => encodeURIComponent(part)).join("/");
+    }
+
+    function joinMovePath(dir, name) {
+        const cleanName = String(name || "").trim().replace(/^\/+/, "");
+        return `${normalizeMoveDir(dir)}${cleanName}`;
+    }
+
+    function createMoveDialog() {
+        const dialog = document.createElement("div");
+        dialog.className = "dufs-move-overlay";
+        dialog.hidden = true;
+        dialog.innerHTML = `
+            <div class="dufs-move-panel" role="dialog" aria-modal="true" aria-label="移动文件">
+                <div class="dufs-move-title">移动到路径</div>
+                <div class="dufs-move-source"></div>
+                <div class="dufs-move-path"></div>
+                <div class="dufs-move-toolbar">
+                    <button type="button" data-action="root">根目录</button>
+                    <button type="button" data-action="up">上一级</button>
+                    <button type="button" data-action="refresh">刷新</button>
+                </div>
+                <div class="dufs-move-list"></div>
+                <label class="dufs-move-field">
+                    <span>文件名</span>
+                    <input data-role="name" type="text">
+                </label>
+                <div class="dufs-move-preview"></div>
+                <div class="dufs-move-error" hidden></div>
+                <div class="dufs-move-actions">
+                    <button type="button" data-action="cancel">取消</button>
+                    <button type="button" data-action="save">保存</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(dialog);
+
+        const source = dialog.querySelector(".dufs-move-source");
+        const pathLabel = dialog.querySelector(".dufs-move-path");
+        const list = dialog.querySelector(".dufs-move-list");
+        const nameInput = dialog.querySelector('[data-role="name"]');
+        const preview = dialog.querySelector(".dufs-move-preview");
+        const error = dialog.querySelector(".dufs-move-error");
+        let currentDir = "/";
+        let resolveDialog = null;
+
+        function showError(message) {
+            error.textContent = message;
+            error.hidden = !message;
+        }
+
+        function updatePreview() {
+            const target = joinMovePath(currentDir, nameInput.value);
+            preview.textContent = `目标：${target}`;
+        }
+
+        async function loadDir(path) {
+            currentDir = normalizeMoveDir(path);
+            pathLabel.textContent = currentDir;
+            list.innerHTML = '<div class="dufs-move-empty">加载中...</div>';
+            showError("");
+            updatePreview();
+            try {
+                const response = await fetch(`${encodeMovePath(currentDir)}?json=`, {
+                    credentials: "same-origin",
+                    headers: { accept: "application/json" },
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                const data = await response.json();
+                const dirs = (data.paths || [])
+                    .filter((item) => item.path_type === "Dir" || item.path_type === "SymlinkDir")
+                    .map((item) => item.name.replace(/\/+$/g, ""))
+                    .filter(Boolean)
+                    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+                if (!dirs.length) {
+                    list.innerHTML = '<div class="dufs-move-empty">当前目录没有子文件夹</div>';
+                    return;
+                }
+                list.innerHTML = dirs.map((name) => `
+                    <button type="button" class="dufs-move-dir" data-dir="${encodeURIComponent(name)}">
+                        <span class="dufs-move-dir-icon">DIR</span>
+                        <span>${name.replace(/[&<>"']/g, (char) => ({
+                            "&": "&amp;",
+                            "<": "&lt;",
+                            ">": "&gt;",
+                            '"': "&quot;",
+                            "'": "&#39;",
+                        }[char]))}</span>
+                    </button>
+                `).join("");
+            } catch (err) {
+                console.error(err);
+                list.innerHTML = '<div class="dufs-move-empty">目录加载失败</div>';
+                showError("目录加载失败");
+            }
+        }
+
+        dialog.addEventListener("click", (event) => {
+            if (event.target === dialog) {
+                dialog.hidden = true;
+                resolveDialog?.(null);
+                return;
+            }
+            const button = event.target.closest("button");
+            if (!button) {
+                return;
+            }
+            const action = button.dataset.action;
+            if (button.classList.contains("dufs-move-dir")) {
+                loadDir(joinMovePath(currentDir, decodeURIComponent(button.dataset.dir)));
+                return;
+            }
+            if (action === "root") {
+                loadDir("/");
+                return;
+            }
+            if (action === "up") {
+                loadDir(getMoveParentDir(currentDir));
+                return;
+            }
+            if (action === "refresh") {
+                loadDir(currentDir);
+                return;
+            }
+            if (action === "cancel") {
+                dialog.hidden = true;
+                resolveDialog?.(null);
+                return;
+            }
+            if (action === "save") {
+                const filename = nameInput.value.trim();
+                if (!filename) {
+                    showError("文件名不能为空");
+                    nameInput.focus();
+                    return;
+                }
+                dialog.hidden = true;
+                resolveDialog?.(joinMovePath(currentDir, filename));
+            }
+        });
+
+        nameInput.addEventListener("input", updatePreview);
+
+        return {
+            open(options) {
+                source.textContent = `移动：${options.item?.name || ""}`;
+                nameInput.value = options.item?.name || "";
+                dialog.hidden = false;
+                loadDir(options.currentPath || "/");
+                setTimeout(() => nameInput.focus(), 0);
+                return new Promise((resolve) => {
+                    resolveDialog = resolve;
+                });
+            },
+        };
+    }
+
+    let moveDialogController = null;
+    window.__DUFS_PICK_MOVE_DESTINATION__ = function (options) {
+        if (!moveDialogController) {
+            moveDialogController = createMoveDialog();
+        }
+        return moveDialogController.open(options || {});
+    };
+
     function installTitleThemeToggle() {
         const title = document.querySelector(".v-app-bar .v-toolbar-title") || document.querySelector(".v-toolbar-title__placeholder");
         if (!title) {

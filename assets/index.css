@@ -27767,8 +27767,28 @@ body,
 button,
 a,
 [role=button],
-.dufs-title-theme-toggle {
+.dufs-title-theme-toggle,
+.v-btn,
+.v-icon,
+.v-app-bar svg,
+.v-card.my-4 .v-table svg,
+.v-card.my-4 .v-table .v-icon,
+.topbar-action-btn,
+.dufs-settings-button {
     cursor: url("src/sakura/link.cur") 15 2, pointer
+}
+
+.v-btn,
+.v-btn *,
+.v-icon,
+.v-icon *,
+.topbar-action-btn,
+.topbar-action-btn *,
+.dufs-settings-button,
+.dufs-settings-button *,
+.dufs-title-theme-toggle,
+.dufs-title-theme-toggle * {
+    cursor: url("src/sakura/link.cur") 15 2, pointer !important
 }
 
 input,
@@ -28112,6 +28132,182 @@ textarea,
 }
 
 .dufs-login-actions button[type=submit] {
+    background: var(--dufs-accent-color);
+    border-color: var(--dufs-accent-color);
+    color: #fff
+}
+
+.dufs-move-overlay {
+    align-items: center;
+    background: rgba(8, 12, 20, .42);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    left: 0;
+    padding: 20px;
+    position: fixed;
+    right: 0;
+    top: 0;
+    z-index: 10000
+}
+
+.dufs-move-overlay[hidden] {
+    display: none !important
+}
+
+.dufs-move-panel {
+    background: rgba(255, 255, 255, .72);
+    border: 1px solid rgba(255, 255, 255, .42);
+    border-radius: 18px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, .28);
+    color: rgba(18, 24, 34, .9);
+    max-width: 520px;
+    padding: 22px;
+    width: min(520px, 100%)
+}
+
+.dufs-move-title {
+    color: var(--dufs-accent-color);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 12px
+}
+
+.dufs-move-source {
+    color: rgba(18, 24, 34, .68);
+    font-size: .9rem;
+    margin-bottom: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap
+}
+
+.dufs-move-path {
+    background: rgba(255, 255, 255, .32);
+    border: 1px solid rgba(0, 0, 0, .08);
+    border-radius: 10px;
+    color: rgba(18, 24, 34, .86);
+    font-family: ui-monospace, Cascadia Mono, Segoe UI Mono, Liberation Mono, Menlo, Monaco, Consolas, monospace;
+    margin-bottom: 12px;
+    overflow-x: auto;
+    padding: 8px 10px;
+    white-space: nowrap
+}
+
+.dufs-move-toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px
+}
+
+.dufs-move-toolbar button,
+.dufs-move-actions button {
+    background: rgba(255, 255, 255, .5);
+    border: 1px solid rgba(0, 0, 0, .08);
+    border-radius: 999px;
+    color: rgba(18, 24, 34, .82);
+    cursor: pointer;
+    padding: 8px 14px
+}
+
+.dufs-move-toolbar button:hover,
+.dufs-move-toolbar button:focus-visible,
+.dufs-move-actions button:hover,
+.dufs-move-actions button:focus-visible,
+.dufs-move-dir:hover,
+.dufs-move-dir:focus-visible {
+    border-color: var(--dufs-accent-color);
+    color: var(--dufs-accent-color)
+}
+
+.dufs-move-list {
+    background: rgba(255, 255, 255, .24);
+    border: 1px solid rgba(0, 0, 0, .08);
+    border-radius: 12px;
+    max-height: 240px;
+    margin-bottom: 14px;
+    overflow: auto;
+    padding: 6px
+}
+
+.dufs-move-dir {
+    align-items: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: rgba(18, 24, 34, .86);
+    cursor: pointer;
+    display: flex;
+    gap: 10px;
+    min-height: 38px;
+    padding: 7px 10px;
+    text-align: left;
+    width: 100%
+}
+
+.dufs-move-dir-icon {
+    color: var(--dufs-accent-color);
+    font-size: .72rem;
+    font-weight: 700;
+    min-width: 28px
+}
+
+.dufs-move-empty {
+    color: rgba(18, 24, 34, .58);
+    padding: 12px;
+    text-align: center
+}
+
+.dufs-move-field {
+    display: block;
+    margin: 12px 0
+}
+
+.dufs-move-field span {
+    display: block;
+    font-size: .95rem;
+    margin-bottom: 8px
+}
+
+.dufs-move-field input {
+    background: rgba(255, 255, 255, .36);
+    border: 1px solid rgba(0, 0, 0, .14);
+    border-radius: 10px;
+    color: rgba(18, 24, 34, .9);
+    font: inherit;
+    height: 40px;
+    padding: 0 12px;
+    width: 100%
+}
+
+.dufs-move-field input:focus {
+    border-color: var(--dufs-accent-color);
+    outline: none
+}
+
+.dufs-move-preview {
+    color: rgba(18, 24, 34, .62);
+    font-size: .86rem;
+    margin-top: 8px;
+    overflow-wrap: anywhere
+}
+
+.dufs-move-error {
+    color: #b3261e;
+    font-size: .9rem;
+    margin-top: 10px
+}
+
+.dufs-move-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 18px
+}
+
+.dufs-move-actions button[data-action=save] {
     background: var(--dufs-accent-color);
     border-color: var(--dufs-accent-color);
     color: #fff

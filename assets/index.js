@@ -22713,13 +22713,16 @@ const Sb = ["color", "file", "time", "date", "datetime-local", "week", "month"],
                                     icon: "$mdiFileMove",
                                     density: "comfortable",
                                     onClick: o => (async e => {
-                                        const o = await t.promises.prompt(r("dialogMoveLabel"), r("actionMove"), {
+                                        const o = window.__DUFS_PICK_MOVE_DESTINATION__ ? await window.__DUFS_PICK_MOVE_DESTINATION__({
+                                            item: e,
+                                            currentPath: y.value
+                                        }) : await t.promises.prompt(r("dialogMoveLabel"), r("actionMove"), {
                                             value: e.name
                                         });
                                         o && (await a(e.fullpath, {
                                             method: "MOVE",
                                             headers: {
-                                                Destination: encodeURI(y.value + o)
+                                                Destination: encodeURI(window.__DUFS_PICK_MOVE_DESTINATION__ ? o : y.value + o)
                                             }
                                         }), n.success(r(e.is_dir ? "toastMoveFolder" : "toastMoveFile")), await w())
                                     })(e)
