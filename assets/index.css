@@ -27787,7 +27787,14 @@ a,
 .dufs-settings-button,
 .dufs-settings-button *,
 .dufs-title-theme-toggle,
-.dufs-title-theme-toggle * {
+.dufs-title-theme-toggle *,
+.dufs-settings-panel button,
+.dufs-settings-panel button *,
+.dufs-settings-panel input[type=color],
+.dufs-login-panel button,
+.dufs-login-panel button *,
+.dufs-move-panel button,
+.dufs-move-panel button * {
     cursor: url("src/sakura/link.cur") 15 2, pointer !important
 }
 
