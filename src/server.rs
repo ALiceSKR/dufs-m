@@ -1515,7 +1515,12 @@ impl Server {
             }
         };
 
-        let authorization = headers.get(AUTHORIZATION);
+        let cookie_authorization = if headers.get(AUTHORIZATION).is_none() {
+            Self::get_cookie_auth(headers)
+        } else {
+            None
+        };
+        let authorization = headers.get(AUTHORIZATION).or(cookie_authorization.as_ref());
         let guard = self
             .args
             .auth
